@@ -222,6 +222,10 @@ Part B successfully builds customer segments and a lapse prediction model using 
 
 The selected model is saved for future use, and the retention list provides an example of how customer predictions can support targeted retention campaigns.
 
+### Part B — Limitations and Next Steps
+
+The Premium flag is calculated from whole-window RFM data, which includes the September period used to define the lapse label. Consequently, the Premium-customer retention list is illustrative and must not be interpreted as a leakage-free evaluation of the model. A future production system should generate customer segments using information available strictly before the prediction date.
+
 
 ## Part C — Support Ticket Triage with Guardrails (22 marks)
 
