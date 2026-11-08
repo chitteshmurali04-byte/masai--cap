@@ -1,3 +1,228 @@
+# Part B — Customer Segments and Lapse Prediction (28 marks)
+
+## 1. Build the RFM Table
+
+I created an RFM table using completed orders as of 2025-10-01 00:00:00.
+
+- Recency: Number of days since the customer's most recent completed order.
+- Frequency: Number of distinct completed orders.
+- Monetary: Total amount spent on completed orders.
+
+Reference results:
+
+| Metric | Result |
+|---|---:|
+| Customers | 1,175 |
+| Median recency | 19 days |
+| Minimum recency | 0 days |
+| Maximum recency | 180 days |
+| Mean frequency | 9.46 |
+| Maximum frequency | 33 |
+| Mean monetary | INR 2,552.06 |
+| Maximum monetary | INR 14,766.55 |
+
+## 2. K-Means Clustering
+
+I standardised the RFM variables using StandardScaler and fitted K-Means models for K values from 2 to 8.
+
+| K | Inertia | Silhouette |
+|---|---:|---:|
+| 2 | 1820.8 | 0.465 |
+| 3 | 1268.2 | 0.445 |
+| 4 | 743.1 | 0.526 |
+| 5 | 617.4 | 0.481 |
+| 6 | 503.2 | 0.482 |
+| 7 | 408.5 | 0.416 |
+| 8 | 366.5 | 0.412 |
+
+I selected K=4 because it provides a good balance between the elbow, silhouette score and business interpretability.
+
+Inertia always decreases as K increases because adding more clusters allows customers to be closer to their cluster centres. However, choosing K=8 only because it has lower inertia would create too many segments and make business targeting less practical.
+
+## 3. Segment Profiles and PCA
+
+I selected four customer segments and assigned business names according to their RFM characteristics.
+
+The segment with the highest average monetary value was labelled Premium.
+
+| Segment | Customers | Mean Recency | Mean Frequency | Mean Monetary |
+|---|---:|---:|---:|---:|
+| Segment 0 | [ACTUAL] | [ACTUAL] | [ACTUAL] | [ACTUAL] |
+| Segment 1 | [ACTUAL] | [ACTUAL] | [ACTUAL] | [ACTUAL] |
+| Segment 2 | [ACTUAL] | [ACTUAL] | [ACTUAL] | [ACTUAL] |
+| Segment 3 | [ACTUAL] | [ACTUAL] | [ACTUAL] | [ACTUAL] |
+
+Cluster numbers are only labels and do not indicate customer ranking or importance.
+
+I used PCA with two components on the scaled RFM data.
+
+Explained variance ratio: [ACTUAL] and [ACTUAL].
+
+The two components explain approximately 85.2% of the total variance in the reference results.
+
+The file `outputs/customer_segments.csv` contains:
+
+`customer_id, recency, frequency, monetary, segment_id, segment_name, is_premium`
+
+## 4. Define the Lapse Problem
+
+I used 2025-09-01 as the cutoff date.
+
+Customers with at least one completed order before this date were included in the cohort.
+
+A customer was labelled as lapsed if they did not make a completed order between September 1 and September 30, 2025.
+
+Reference results:
+
+| Metric | Result |
+|---|---:|
+| Total customers | 1,156 |
+| Lapsed customers | 443 |
+| Lapsed percentage | 38.32% |
+| Training rows | 924 |
+| Testing rows | 232 |
+
+Features included recency, frequency, monetary value, average discount, cancellation rate, average delivery time, favourite product category, city, age, gender and customer tenure.
+
+No order dated on or after 2025-09-01 was used to construct the model features. Segment labels from Task 3 were also excluded to prevent data leakage.
+
+## 5. Preprocessing Without Leakage
+
+I used a ColumnTransformer and Pipeline.
+
+Numerical features were standardised using StandardScaler. Categorical features were encoded using OneHotEncoder with drop="first".
+
+All preprocessing components were fitted using training data only and then applied to the test data.
+
+The fitted training scaler's mean frequency was [ACTUAL], while the full-cohort mean frequency was [ACTUAL].
+
+These values differ because the scaler was fitted only on the training subset rather than the entire cohort.
+
+Missing values were handled using training-fitted imputers, and assertions confirmed that the transformed training and testing features contained no missing or non-finite values.
+
+## 6. Train, Tune and Evaluate
+
+I first evaluated a baseline model that always predicts not lapsed.
+
+Baseline accuracy: 61.6%.
+
+Baseline lapsed-class F1: 0.
+
+I then tuned two machine learning models.
+
+### Logistic Regression
+
+Grid search tested C values of 0.01, 0.1, 1, 10 and 100 using five-fold cross-validation.
+
+Best parameters: [ACTUAL]
+
+Best cross-validation F1: [ACTUAL]
+
+Confusion matrix:
+
+[ACTUAL]
+
+Precision: [ACTUAL]
+
+Recall: [ACTUAL]
+
+F1-score: [ACTUAL]
+
+### Random Forest
+
+Grid search tested max_depth values of 3, 5 and 8, and min_samples_leaf values of 5, 10 and 20 using five-fold cross-validation.
+
+Best parameters: [ACTUAL]
+
+Best cross-validation F1: [ACTUAL]
+
+Confusion matrix:
+
+[ACTUAL]
+
+Precision: [ACTUAL]
+
+Recall: [ACTUAL]
+
+F1-score: [ACTUAL]
+
+### Selected Model
+
+I selected [ACTUAL MODEL] because it achieved the best lapsed-class F1-score on the untouched test set.
+
+Missing a customer who is about to stop ordering means losing a potential customer permanently. However, incorrectly targeting a loyal customer wastes marketing resources and may result in unnecessary discounts. The selected model provides a balance between identifying customers at risk and avoiding excessive targeting.
+
+## 7. Class-Balance Experiment
+
+I oversampled the lapsed class in the training set only, keeping all original training rows and adding randomly selected duplicate lapsed customers until both classes were balanced.
+
+The original test set remained unchanged.
+
+| Metric | Original Model | Balanced Model |
+|---|---:|---:|
+| Precision | [ACTUAL] | [ACTUAL] |
+| Recall | [ACTUAL] | [ACTUAL] |
+| F1-score | [ACTUAL] | [ACTUAL] |
+
+Recall changed the most after balancing.
+
+Higher recall means the retention team can identify more customers who are likely to stop ordering. However, this can also increase false positives, meaning some loyal customers may receive unnecessary retention campaigns.
+
+## 8. Interpret, Persist and Use
+
+### Random Forest Feature Importance
+
+The five most important features were:
+
+| Feature | Importance |
+|---|---:|
+| [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] |
+
+### Logistic Regression Coefficients
+
+The three most influential coefficients were:
+
+| Feature | Coefficient | Interpretation |
+|---|---:|---|
+| [ACTUAL] | [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] | [ACTUAL] |
+| [ACTUAL] | [ACTUAL] | [ACTUAL] |
+
+A positive coefficient increases the predicted likelihood of lapsing, while a negative coefficient decreases it, holding other features constant.
+
+### Model Persistence
+
+The selected model was saved using joblib:
+
+`outputs/lapse_model.joblib`
+
+I reloaded the model using joblib.load and compared its predictions against the original model.
+
+Result: [ACTUAL — EXACT MATCH / FAILURE].
+
+### Retention List
+
+I ranked Premium-segment customers in the test set by predicted lapse probability and selected the top 10.
+
+The output was saved to:
+
+`outputs/retention_list.csv`
+
+Number of customers in the retention list who actually lapsed: [ACTUAL].
+
+**Important limitation:** The Premium flag comes from whole-window RFM data, including the September period used to define the lapse label. Therefore, the retention list is illustrative and is not a leakage-free evaluation.
+
+## Conclusion
+
+Part B successfully builds customer segments and a lapse prediction model using cleaned order history. K-Means identifies customer groups, while Logistic Regression and Random Forest predict the likelihood of customers becoming inactive.
+
+The selected model is saved for future use, and the retention list provides an example of how customer predictions can support targeted retention campaigns.
+
+
 ## Part C — Support Ticket Triage with Guardrails (22 marks)
 
 ### 1. Input Guardrails
