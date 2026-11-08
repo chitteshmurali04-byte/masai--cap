@@ -1,0 +1,14 @@
+your-repository/
+│
+├── generate_data.py
+├── mock_llm.py
+├── part_c.py
+│
+├── data/
+│   └── raw/
+│       └── tickets.csv
+│
+├── outputs/
+│   └── customer_segments.csv
+│
+└── README.md
