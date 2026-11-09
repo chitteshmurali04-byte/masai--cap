@@ -1,3 +1,75 @@
+# Part A — Data Foundation: Clean, Store, Query
+
+## Reproduce
+
+Run these commands from the repository root. Do not modify the supplied `generate_data.py` or `mock_llm.py` files.
+
+```bash
+git checkout main
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+# source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install pandas numpy scikit-learn joblib
+python -m pip freeze > requirements.txt
+python generate_data.py
+python part_a.py
+python validate_part_a.py
+```
+
+The generator should print exactly:
+
+```text
+generated: customers=1200 products=40 orders_raw=13084 tickets=164
+```
+
+## Part A
+
+### Raw data audit
+
+The three raw CSV files are loaded with pandas. For each table, the audit records its shape, data types, and missing-value count and percentage for every column. The orders audit also records exact duplicate rows, pending rows, distinct order IDs, non-numeric amounts, negative delivery durations and blank delivery durations. The customers audit records blank ages, ages outside 10–100, raw city spellings, nonblank gender spellings and blank genders. The detailed audit is saved to `outputs/part_a_audit.txt`.
+
+### Cleaning rules
+
+- Customers: remove leading/trailing city whitespace and apply title case; standardise gender to `male`, `female` or `unknown`; set ages outside 10–100 to missing and fill missing ages with the median age for that city; parse `signup_date` as a date.
+- Products: convert `price_inr` to numeric.
+- Orders: parse `order_ts`; remove exact duplicate rows; retain only the latest timestamp row for each `order_id`; convert `order_amount` to numeric; calculate missing amounts as `round(price_inr * quantity * (1 - discount_pct / 100), 2)`; set negative delivery durations to missing; fill missing delivery duration for completed orders with the median for that product category. Cancelled orders retain missing delivery duration because they were not delivered.
+- Save the cleaned tables under `data/clean/` and load the three tables into `data/instamart.db`.
+
+### SQL analysis
+
+Seven queries are saved in `sql/queries.sql` and executed from Python against SQLite: WHERE/GROUP BY/HAVING; a three-table join; scalar subquery; LEFT JOIN; CTEs; RANK, DENSE_RANK and ROW_NUMBER; and a daily running revenue total.
+
+### pandas analysis
+
+The script rebuilds the city/category revenue result using `pivot_table(..., margins=True)`, prints city-level named aggregations, describes the completed-order amount distribution using mean, median, skew, quartiles, Tukey fences and outlier counts, and prints a correlation matrix for amount, discount, quantity and delivery time. Correlation measures association and does not establish causation.
+
+### Validation
+
+Run `python validate_part_a.py`. It checks the cleaned row counts, statuses, missing values, completed revenue, customer age/gender rules and SQLite tables. A successful run prints exactly `ALL CHECKPOINTS PASSED`.
+
+### Reference checkpoints
+
+| Item | Expected |
+|---|---:|
+| Raw orders | 13,084 |
+| Exact duplicate rows | 119 |
+| Pending raw rows | 656 |
+| Distinct raw order IDs | 12,309 |
+| Non-numeric raw order amounts | 120 |
+| Negative delivery durations | 106 |
+| Blank delivery durations | 2,541 |
+| Clean orders | 12,309 |
+| Completed orders | 11,110 |
+| Cancelled orders | 1,199 |
+| Pending orders after cleaning | 0 |
+| Completed revenue | INR 2,998,668.80 |
+
+All monetary amounts are in INR.
+
+
 # Part B — Customer Segments and Lapse Prediction (28 marks)
 
 ## 1. Build the RFM Table
